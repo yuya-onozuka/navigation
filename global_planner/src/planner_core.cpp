@@ -45,6 +45,8 @@
 #include <global_planner/grid_path.h>
 #include <global_planner/gradient_path.h>
 #include <global_planner/quadratic_calculator.h>
+//add
+#include <std_msgs/Float64.h>
 
 //register this planner as a BaseGlobalPlanner plugin
 PLUGINLIB_EXPORT_CLASS(global_planner::GlobalPlanner, nav_core::BaseGlobalPlanner)
@@ -135,6 +137,8 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
 
         plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
         potential_pub_ = private_nh.advertise<nav_msgs::OccupancyGrid>("potential", 1);
+        //add
+        curvature_pub_ = private_nh.advertise<std_msgs::Float64>("curvature", 1);
 
         private_nh.param("allow_unknown", allow_unknown_, true);
         planner_->setHasUnknown(allow_unknown_);
@@ -313,6 +317,8 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
 
     //publish the plan for visualization purposes
     publishPlan(plan);
+    //add
+    publishCurvature(plan);
     delete potential_array_;
     return !plan.empty();
 }
@@ -337,6 +343,29 @@ void GlobalPlanner::publishPlan(const std::vector<geometry_msgs::PoseStamped>& p
     }
 
     plan_pub_.publish(gui_path);
+}
+
+void GlobalPlanner::publishCurvature(const std::vector<geometry_msgs::PoseStamped>& path) {
+    if (!initialized_) {
+        ROS_ERROR(
+                "This planner has not been initialized yet, but it is being used, please call initialize() before use");
+        return;
+    }
+
+    //create a message for the curvature
+    std_msgs::Float64 curvature;
+
+    Eigen::Vector2d start_point(path[0].pose.position.x, path[0].pose.position.y);
+    Eigen::Vector2d middle_point(path[path.size()/2].pose.position.x, path[path.size()/2].pose.position.y);
+    Eigen::Vector2d goal_point(path[path.size()-1].pose.position.x, path[path.size()-1].pose.position.y);
+
+    Eigen::Vector2d start_to_middle_vector = middle_point - start_point;
+    Eigen::Vector2d start_to_goal_vector = goal_point - start_point;
+    Eigen::Vector2d middle_to_goal_vector = goal_point - middle_point;
+
+    curvature.data = 2 * sin(angle_between_vectors(start_to_middle_vector, start_to_goal_vector)) / middle_to_goal_vector.norm();
+
+    curvature_pub_.publish(curvature);
 }
 
 bool GlobalPlanner::getPlanFromPotential(double start_x, double start_y, double goal_x, double goal_y,

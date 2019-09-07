@@ -47,6 +47,8 @@
 #include <nav_core/base_global_planner.h>
 #include <nav_msgs/GetPlan.h>
 #include <navfn/potarr_point.h>
+//add
+#include <Eigen/Dense>
 
 namespace navfn {
   /**
@@ -153,6 +155,9 @@ namespace navfn {
        */
       void publishPlan(const std::vector<geometry_msgs::PoseStamped>& path, double r, double g, double b, double a);
 
+      //add
+      void publishCurvature(const std::vector<geometry_msgs::PoseStamped>& path);
+
       ~NavfnROS(){}
 
       bool makePlanService(nav_msgs::GetPlan::Request& req, nav_msgs::GetPlan::Response& resp);
@@ -166,6 +171,8 @@ namespace navfn {
       boost::shared_ptr<NavFn> planner_;
       ros::Publisher plan_pub_;
       ros::Publisher potarr_pub_;
+      //add
+      ros::Publisher curvature_pub_;
       bool initialized_, allow_unknown_, visualize_potential_;
 
 
@@ -174,6 +181,16 @@ namespace navfn {
         double dx = p1.pose.position.x - p2.pose.position.x;
         double dy = p1.pose.position.y - p2.pose.position.y;
         return dx*dx +dy*dy;
+      }
+
+      //add
+      double angle_between_vectors(const Eigen::Vector2d v1, const Eigen::Vector2d v2){
+        double dot = v1.dot(v2);
+        double norm_v1 = v1.norm();
+        double norm_v2 = v2.norm();
+        double cos = dot / (norm_v1*norm_v2);
+        double angle = acos(cos);
+        return angle;
       }
 
       void mapToWorld(double mx, double my, double& wx, double& wy);

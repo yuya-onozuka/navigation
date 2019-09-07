@@ -70,6 +70,10 @@
 
 #include <base_local_planner/odometry_helper_ros.h>
 
+//add
+#include <std_msgs/Float64.h>
+#include <Eigen/Dense>
+
 namespace base_local_planner {
   /**
    * @class TrajectoryPlannerROS
@@ -160,6 +164,10 @@ namespace base_local_planner {
       /** @brief Return the inner TrajectoryPlanner object.  Only valid after initialize(). */
       TrajectoryPlanner* getPlanner() const { return tc_; }
 
+      //add
+      void publishCurvature(const std::vector<geometry_msgs::PoseStamped>& path);
+      void curvatureCallback(const std_msgs::Float64::ConstPtr& curvature);
+
     private:
       /**
        * @brief Callback to update the local planner's parameters based on dynamic reconfigure
@@ -191,6 +199,16 @@ namespace base_local_planner {
         return x < 0.0 ? -1.0 : 1.0;
       }
 
+      //add
+      double angle_between_vectors(const Eigen::Vector2d v1, const Eigen::Vector2d v2){
+        double dot = v1.dot(v2);
+        double norm_v1 = v1.norm();
+        double norm_v2 = v2.norm();
+        double cos = dot / (norm_v1*norm_v2);
+        double angle = acos(cos);
+        return angle;
+      }
+
       WorldModel* world_model_; ///< @brief The world model that the controller will use
       TrajectoryPlanner* tc_; ///< @brief The trajectory controller
 
@@ -216,6 +234,9 @@ namespace base_local_planner {
       bool latch_xy_goal_tolerance_, xy_tolerance_latch_;
 
       ros::Publisher g_plan_pub_, l_plan_pub_;
+      //add
+      ros::Publisher curvature_pub_;
+      ros::Subscriber curvature_sub_;
 
       dynamic_reconfigure::Server<BaseLocalPlannerConfig> *dsrv_;
       base_local_planner::BaseLocalPlannerConfig default_config_;

@@ -207,6 +207,11 @@ namespace base_local_planner {
       geometry_msgs::Polygon getFootprintPolygon() const { return costmap_2d::toPolygon(footprint_spec_); }
       std::vector<geometry_msgs::Point> getFootprint() const { return footprint_spec_; }
 
+      //add
+      double acc_lim_y_;
+      double max_vel_x_;
+      double modified_max_vel_x_;
+
     private:
       /**
        * @brief  Create the trajectories we wish to explore, score them, and return the best option
@@ -287,7 +292,7 @@ namespace base_local_planner {
       int vtheta_samples_; ///< @brief The number of samples we'll take in the theta dimension of the control space
 
       double pdist_scale_, gdist_scale_, occdist_scale_; ///< @brief Scaling factors for the controller's cost function
-      double acc_lim_x_, acc_lim_y_, acc_lim_theta_; ///< @brief The acceleration limits of the robot
+      double acc_lim_x_, /*acc_lim_y_,*/ acc_lim_theta_; ///< @brief The acceleration limits of the robot
 
       double prev_x_, prev_y_; ///< @brief Used to calculate the distance the robot has traveled before reseting oscillation booleans
       double escape_x_, escape_y_, escape_theta_; ///< @brief Used to calculate the distance the robot has traveled before reseting escape booleans
@@ -299,7 +304,7 @@ namespace base_local_planner {
       double escape_reset_dist_, escape_reset_theta_; ///< @brief The distance the robot must travel before it can leave escape mode
       bool holonomic_robot_; ///< @brief Is the robot holonomic or not? 
       
-      double max_vel_x_, min_vel_x_, max_vel_th_, min_vel_th_, min_in_place_vel_th_; ///< @brief Velocity limits for the controller
+      double /*max_vel_x_,*/ min_vel_x_, max_vel_th_, min_vel_th_, min_in_place_vel_th_; ///< @brief Velocity limits for the controller
 
       double backup_vel_; ///< @brief The velocity to use while backing up
 

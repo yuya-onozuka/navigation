@@ -91,6 +91,9 @@ namespace base_local_planner {
       ros::NodeHandle private_nh("~/" + name);
       g_plan_pub_ = private_nh.advertise<nav_msgs::Path>("global_plan", 1);
       l_plan_pub_ = private_nh.advertise<nav_msgs::Path>("local_plan", 1);
+      //add
+      curvature_pub_ = private_nh.advertise<std_msgs::Float64>("curvature", 1);
+      curvature_sub_ = private_nh.subscribe<std_msgs::Float64>("/move_base/TrajectoryPlannerROS/curvature", 1, &TrajectoryPlannerROS::curvatureCallback, this);
 
 
       tf_ = tf;
@@ -249,6 +252,37 @@ namespace base_local_planner {
     }
   }
 
+  //add
+  void TrajectoryPlannerROS::publishCurvature(const std::vector<geometry_msgs::PoseStamped>& path){
+    if(!initialized_){
+      ROS_ERROR("This planner has not been initialized yet, but it is being used, please call initialize() before use");
+      return;
+    }
+
+    //create a message for the curvature
+    std_msgs::Float64 curvature;
+
+    Eigen::Vector2d start_point(path[0].pose.position.x, path[0].pose.position.y);
+    Eigen::Vector2d middle_point(path[path.size()/2].pose.position.x, path[path.size()/2].pose.position.y);
+    Eigen::Vector2d goal_point(path[path.size()-1].pose.position.x, path[path.size()-1].pose.position.y);
+
+    Eigen::Vector2d start_to_middle_vector = middle_point - start_point;
+    Eigen::Vector2d start_to_goal_vector = goal_point - start_point;
+    Eigen::Vector2d middle_to_goal_vector = goal_point - middle_point;
+
+    curvature.data = 2 * sin(angle_between_vectors(start_to_middle_vector, start_to_goal_vector)) / middle_to_goal_vector.norm();
+
+    curvature_pub_.publish(curvature);
+
+  }
+
+  //add
+  void TrajectoryPlannerROS::curvatureCallback(const std_msgs::Float64::ConstPtr& curvature){
+    tc_->modified_max_vel_x_ = std::min(pow(tc_->acc_lim_y_ / curvature->data, 0.5), tc_->max_vel_x_);
+    // tc_->modified_max_vel_x_ = pow(tc_->acc_lim_y_ / curvature->data, 0.5);
+    ROS_INFO("modified_max_vel_x_callback = %lf", tc_->modified_max_vel_x_);
+  }
+
   std::vector<double> TrajectoryPlannerROS::loadYVels(ros::NodeHandle node){
     std::vector<double> y_vels;
 
@@ -365,6 +399,9 @@ namespace base_local_planner {
     //reset the global plan
     global_plan_.clear();
     global_plan_ = orig_global_plan;
+
+    //add
+    publishCurvature(global_plan_);
     
     //when we get a new plan, we also want to clear any latch we may have on goal tolerances
     xy_tolerance_latch_ = false;

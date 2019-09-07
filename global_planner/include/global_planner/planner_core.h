@@ -52,6 +52,8 @@
 #include <global_planner/traceback.h>
 #include <global_planner/orientation_filter.h>
 #include <global_planner/GlobalPlannerConfig.h>
+//add
+#include <Eigen/Dense>
 
 namespace global_planner {
 
@@ -160,6 +162,9 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
          * @brief  Publish a path for visualization purposes
          */
         void publishPlan(const std::vector<geometry_msgs::PoseStamped>& path);
+        
+        //add
+        void publishCurvature(const std::vector<geometry_msgs::PoseStamped>& path);
 
         bool makePlanService(nav_msgs::GetPlan::Request& req, nav_msgs::GetPlan::Response& resp);
 
@@ -171,6 +176,8 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
         costmap_2d::Costmap2D* costmap_;
         std::string frame_id_;
         ros::Publisher plan_pub_;
+        //add
+        ros::Publisher curvature_pub_;
         bool initialized_, allow_unknown_;
 
     private:
@@ -178,6 +185,15 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
         bool worldToMap(double wx, double wy, double& mx, double& my);
         void clearRobotCell(const geometry_msgs::PoseStamped& global_pose, unsigned int mx, unsigned int my);
         void publishPotential(float* potential);
+        //add
+        double angle_between_vectors(const Eigen::Vector2d v1, const Eigen::Vector2d v2){
+            double dot = v1.dot(v2);
+            double norm_v1 = v1.norm();
+            double norm_v2 = v2.norm();
+            double cos = dot / (norm_v1*norm_v2);
+            double angle = acos(cos);
+            return angle;
+        }
 
         double planner_window_x_, planner_window_y_, default_tolerance_;
         boost::mutex mutex_;
